@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<link href="main.css" rel="stylesheet">
+	<title>GitLab Pipeline Monitor</title>
+</head>
+
+<body>
+	<div id="wrapper">
+		<div id="header"></div>
+		<div id="content-wrapper">
+		</div>
+	</div>
+
+	<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+
+	<script type="application/javascript">
+		var refreshFunction = function () {
+			var urlString = window.location.href
+			var pageUrl = new URL(urlString)
+			var projectID = pageUrl.searchParams.get("projectId");
+
+			var showVariables = pageUrl.searchParams.get("showVariables") == 1;
+
+			var variablesParam = pageUrl.searchParams.get("variables");
+
+			var filterVariables;
+			if (variablesParam != null) {
+				filterVariables = variablesParam.split(',');
+			}
+
+			if (projectID == null || projectID.length == 0) {
+				document.getElementById('content-wrapper').innerHTML = '<div id="alert">No <span class="red">projectId</span> provided.</div>';
+				return;
+			}
+
+			var updateProject = function (projectID) {
+				$.getJSON('data/projects.json', function (data) {
+					var name = data[projectID]
+
+					document.title = name + '- GitLab Pipeline Monitor';
+					document.getElementById('header').innerHTML = '<h1>' + name + '</h1>';
+				});
+			}
+
+			var updateVariablesForPipeline = function (pipelineId) {
+				var variablesUrl = 'data/projects/' + projectID + '/pipelines/' + pipelineId + '/variables.json';
+
+				$.getJSON(variablesUrl, function (data) {
+					var output = [];
+
+					for (i = 0; i < data.length; i++) {
+						var variable = data[i];
+
+						var show = (filterVariables != null && filterVariables.length > 0) ? filterVariables.indexOf(variable.key) >= 0 : true;
+
+						if (show) {
+							output.push(variable.key + ':' + variable.value);
+						}
+					}
+
+					document.getElementById(pipelineId + '_variables').innerHTML = output.join('<br />');
+				});
+			}
+
+			var updateVariables = function (pipelineIds) {
+				for (var j = 0; j < pipelineIds.length; j++) {
+					var pipelineId = pipelineIds[j];
+					updateVariablesForPipeline(pipelineId);
+				}
+			}
+
+			var requestFunction = function (url) {
+				$.getJSON(url, function (data) {
+					var now = new Date();
+
+					var output = '<table>';
+
+					output += '<tr class="pre">';
+					output += '<td>' + 'Updated' + '</td>';
+					output += '<td>' + 'Pipeline ID' + '</td>';
+					output += '<td>' + 'Status' + '</td>';
+					output += '<td>' + 'Branch' + '</td>';
+					if (showVariables) {
+						output += '<td>' + 'Variables' + '</td>';
+					}
+					output += '</tr>';
+
+					var pipelines = [];
+
+					for (var i = 0; i < data.length; i++) {
+						var value = data[i];
+
+						pipelines.push(value.id);
+
+						var updatedDate = new Date(Date.parse(value.updated_at));
+						var minutes = Math.round((now - updatedDate) / 60000);
+						var hours = 0;
+						var days = 0;
+
+						if (minutes >= 60) {
+							hours = Math.round(minutes / 60);
+							minutes = minutes % 60;
+						}
+
+						if (hours >= 24) {
+							days = Math.round(hours / 24);
+							hours = hours % 24;
+						}
+
+						var time = ((days > 0) ? days + ' days' : (hours > 0) ? hours + ' hours' : minutes + ' minutes') + ' ago';
+
+						output += '<tr class="status_row ' + value.status + '">';
+						output += '<td>' + time + '<span class="tiny">' + updatedDate.toLocaleString() + '</span>' + '</td>';
+						output += '<td><a href="' + value.web_url + '">' + value.id + '</a></td>';
+						output += '<td>' + value.status + '</td>';
+						output += '<td>' + value.ref + '</td>';
+						if (showVariables) {
+							output += '<td id="' + value.id + '_variables"></td>';
+						}
+						output += '</tr>';
+					}
+
+					output += '</table>';
+
+
+					document.getElementById('content-wrapper').innerHTML = output;
+
+					if (showVariables) {
+						updateVariables(pipelines);
+					}
+				});
+			}
+
+			updateProject(projectID);
+
+			var url = 'data/projects/' + projectID + '.json';
+			requestFunction(url);
+
+			setTimeout(refreshFunction, 60000);
+		}
+
+		refreshFunction();
+
+	</script>
+</body>
+
+</html>
