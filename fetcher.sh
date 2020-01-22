@@ -58,7 +58,16 @@ do
 
     pipelines_dir="${project_dir}/pipelines"
     mkdir -p ${pipelines_dir}
-    pipeline_ids=$(grep -Eo '"id":\d*?[^\\],' ${project_json})
+
+    grep_param='P'
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      grep_param='E'
+    elif [[ "$OSTYPE" == "freebsd"* ]]; then
+      grep_param='E'
+    fi
+
+    pipeline_ids=$(grep -${grep_param}o '"id":\d*?[^\\],' ${project_json})
 
     for pipeline_id in ${pipeline_ids//,/ }; do
       id=$(echo ${pipeline_id} | sed 's/"id":\(\d*\)/\1/')
