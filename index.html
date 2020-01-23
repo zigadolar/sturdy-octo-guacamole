@@ -25,12 +25,19 @@
 			var projectID = pageUrl.searchParams.get("projectId");
 
 			var showVariables = pageUrl.searchParams.get("showVariables") == 1;
-
 			var variablesParam = pageUrl.searchParams.get("variables");
 
 			var filterVariables;
 			if (variablesParam != null) {
 				filterVariables = variablesParam.split(',');
+			}
+
+			var showJobs = pageUrl.searchParams.get("showJobs") == 1;
+			var jobsParam = pageUrl.searchParams.get("jobs");
+
+			var filterJobs;
+			if (jobsParam != null) {
+				filterJobs = jobsParam.split(',');
 			}
 
 			if (projectID == null || projectID.length == 0) {
@@ -74,6 +81,36 @@
 				}
 			}
 
+			var updateJobsForPipeline = function (pipelineId) {
+				var jobsUrl = 'data/projects/' + projectID + '/pipelines/' + pipelineId + '/jobs.json';
+
+				$.getJSON(jobsUrl, function (data) {
+					var output = [];
+					console.log('output for jobs for pipeline: ' + pipelineId);
+					console.log(data);
+					for (i = 0; i < data.length; i++) {
+						var job = data[i];
+
+						var show = (filterJobs != null && filterJobs.length > 0) ? filterJobs.indexOf(job.name) >= 0 : true;
+
+						if (show) {
+							if (!(output.indexOf(job.name) >= 0)) {
+								output.push(job.name);// + ':' + job.status);
+							}
+						}
+					}
+
+					document.getElementById(pipelineId + '_jobs').innerHTML = output.join('<br />');
+				});
+			}
+
+			var updateJobs = function (pipelineIds) {
+				for (var j = 0; j < pipelineIds.length; j++) {
+					var pipelineId = pipelineIds[j];
+					updateJobsForPipeline(pipelineId);
+				}
+			}
+
 			var requestFunction = function (url) {
 				$.getJSON(url, function (data) {
 					var now = new Date();
@@ -85,8 +122,11 @@
 					output += '<td>' + 'Pipeline ID' + '</td>';
 					output += '<td>' + 'Status' + '</td>';
 					output += '<td>' + 'Branch' + '</td>';
-					if (showVariables) {
+					if (showJobs) {
 						output += '<td>' + 'Variables' + '</td>';
+					}
+					if (showVariables) {
+						output += '<td>' + 'Jobs' + '</td>';
 					}
 					output += '</tr>';
 
@@ -122,6 +162,9 @@
 						if (showVariables) {
 							output += '<td id="' + value.id + '_variables"></td>';
 						}
+						if (showJobs) {
+							output += '<td id="' + value.id + '_jobs"></td>';
+						}
 						output += '</tr>';
 					}
 
@@ -132,6 +175,10 @@
 
 					if (showVariables) {
 						updateVariables(pipelines);
+					}
+
+					if (showJobs) {
+						updateJobs(pipelines);
 					}
 				});
 			}
