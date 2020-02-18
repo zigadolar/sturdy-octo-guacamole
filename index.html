@@ -120,9 +120,8 @@
 					var job = data[0];
 					var commit = job.commit;
 
-					output.push('id: ' + commit.id);
 					output.push('short_id: ' + commit.short_id);
-					output.push(commit.message.split('\n\n').join('<br />'));
+					output.push(commit.title);
 
 					document.getElementById(pipelineId + '_commit').innerHTML = output.join('<br />');
 				});
