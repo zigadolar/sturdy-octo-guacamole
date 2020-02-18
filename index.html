@@ -40,6 +40,8 @@
 				filterJobs = jobsParam.split(',');
 			}
 
+			var showCommit = pageUrl.searchParams.get("showCommit") == 1;
+
 			if (projectID == null || projectID.length == 0) {
 				document.getElementById('content-wrapper').innerHTML = '<div id="alert">No <span class="red">projectId</span> provided.</div>';
 				return;
@@ -86,8 +88,6 @@
 
 				$.getJSON(jobsUrl, function (data) {
 					var output = [];
-					console.log('output for jobs for pipeline: ' + pipelineId);
-					console.log(data);
 					for (i = 0; i < data.length; i++) {
 						var job = data[i];
 
@@ -111,6 +111,30 @@
 				}
 			}
 
+			var updateCommitForPipeline = function (pipelineId) {
+				var jobsUrl = 'data/projects/' + projectID + '/pipelines/' + pipelineId + '/jobs.json';
+
+				$.getJSON(jobsUrl, function (data) {
+					var output = [];
+
+					var job = data[0];
+					var commit = job.commit;
+
+					output.push('id: ' + commit.id);
+					output.push('short_id: ' + commit.short_id);
+					output.push(commit.message.split('\n\n').join('<br />'));
+
+					document.getElementById(pipelineId + '_commit').innerHTML = output.join('<br />');
+				});
+			}
+
+			var updateCommits = function (pipelineIds) {
+				for (var j = 0; j < pipelineIds.length; j++) {
+					var pipelineId = pipelineIds[j];
+					updateCommitForPipeline(pipelineId);
+				}
+			}
+
 			var requestFunction = function (url) {
 				$.getJSON(url, function (data) {
 					var now = new Date();
@@ -122,6 +146,9 @@
 					output += '<td>' + 'Pipeline ID' + '</td>';
 					output += '<td>' + 'Status' + '</td>';
 					output += '<td>' + 'Branch' + '</td>';
+					if (showCommit) {
+						output += '<td>' + 'Commit' + '</td>';
+					}
 					if (showJobs) {
 						output += '<td>' + 'Variables' + '</td>';
 					}
@@ -159,6 +186,9 @@
 						output += '<td><a href="' + value.web_url + '">' + value.id + '</a></td>';
 						output += '<td>' + value.status + '</td>';
 						output += '<td>' + value.ref + '</td>';
+						if (showCommit) {
+							output += '<td id="' + value.id + '_commit"></td>';
+						}
 						if (showVariables) {
 							output += '<td id="' + value.id + '_variables"></td>';
 						}
@@ -172,6 +202,10 @@
 
 
 					document.getElementById('content-wrapper').innerHTML = output;
+
+					if (showCommit) {
+						updateCommits(pipelines);
+					}
 
 					if (showVariables) {
 						updateVariables(pipelines);

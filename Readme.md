@@ -40,6 +40,7 @@ Once the updater is running, open the browser and navigate to:
 Accepted query parameters:
 
 - `projectId`: __required__, id of the gitlab project
+- `showCommit`: *optional*, a flag to determine, if a column with info about the commit, the pipeline was triggered from, should be shown - if `1`, the column will be shown (needs `jobs` information to be fetched)
 - `showVariables`: *optional*, a flag to determine, if a column with pipeline variables should be shown - if `1`, the column will be shown
 - `variables`: *optional*, a comma-separated list of variable names, that should be shown
 - `showJobs`: *optional*, a flag to determine, if a column with pipeline jobs should be shown - if `1`, the column will be shown
@@ -47,4 +48,4 @@ Accepted query parameters:
 
 Example:
 
-`localhost:8000/?projectId=123&showVariables=1&variables=SOME_VARIABLE,OTHER_VARIABLE&showJobs=1&jobs=testJob`
+`localhost:8000/?projectId=123&showCommit=1&showVariables=1&variables=SOME_VARIABLE,OTHER_VARIABLE&showJobs=1&jobs=testJob`
