@@ -135,71 +135,69 @@
 				}
 			}
 
+			var outputTableRowString = function (pipeline, now) {
+				var output = '';
+
+				if (pipeline != null) {
+					var updatedDate = new Date(Date.parse(pipeline.updated_at));
+					var minutes = Math.round((now - updatedDate) / 60000);
+					var hours = 0;
+					var days = 0;
+
+					if (minutes >= 60) {
+						hours = Math.round(minutes / 60);
+						minutes = minutes % 60;
+					}
+
+					if (hours >= 24) {
+						days = Math.round(hours / 24);
+						hours = hours % 24;
+					}
+
+					var time = ((days > 0) ? days + ' days' : (hours > 0) ? hours + ' hours' : minutes + ' minutes') + ' ago';
+				}
+
+				var row_class = pipeline ? 'status_row ' + pipeline.status : 'pre';
+
+
+				output += '<tr class="' + row_class + '">';
+				output += '<td>' + (pipeline ? time + '<span class="tiny">' + updatedDate.toLocaleString() + '</span>' : 'Updated') + '</td>';
+				output += '<td>' + (pipeline ? '<a href="' + pipeline.web_url + '">' + pipeline.id + '</a>' : 'Pipeline ID') + '</td>';
+				output += '<td>' + (pipeline ? pipeline.status : 'Status') + '</td>';
+				output += '<td>' + (pipeline ? pipeline.ref : 'Branch') + '</td>';
+				if (showCommit) {
+					output += '<td'+ (pipeline ? ' id="' + pipeline.id + '_commit">' : '>Commit') + '</td>';
+				}
+				if (showVariables) {
+					output += '<td'+ (pipeline ? ' id="' + pipeline.id + '_variables">' : '>Variables') + '</td>';
+				}
+				if (showJobs) {
+					output += '<td'+ (pipeline ? ' id="' + pipeline.id + '_jobs">' : '>Jobs') + '</td>';
+				}
+				output += '</tr>';
+
+				return output;
+			}
+
 			var requestFunction = function (url) {
 				$.getJSON(url, function (data) {
 					var now = new Date();
 
 					var output = '<table>';
 
-					output += '<tr class="pre">';
-					output += '<td>' + 'Updated' + '</td>';
-					output += '<td>' + 'Pipeline ID' + '</td>';
-					output += '<td>' + 'Status' + '</td>';
-					output += '<td>' + 'Branch' + '</td>';
-					if (showCommit) {
-						output += '<td>' + 'Commit' + '</td>';
-					}
-					if (showVariables) {
-						output += '<td>' + 'Variables' + '</td>';
-					}
-					if (showJobs) {
-						output += '<td>' + 'Jobs' + '</td>';
-					}
-					output += '</tr>';
-
 					var pipelines = [];
 
-					for (var i = 0; i < data.length; i++) {
+					for (var i = -1; i < data.length; i++) {
 						var value = data[i];
 
-						pipelines.push(value.id);
+						output += outputTableRowString(value, now);
 
-						var updatedDate = new Date(Date.parse(value.updated_at));
-						var minutes = Math.round((now - updatedDate) / 60000);
-						var hours = 0;
-						var days = 0;
-
-						if (minutes >= 60) {
-							hours = Math.round(minutes / 60);
-							minutes = minutes % 60;
+						if (value != null) {
+							pipelines.push(value.id);
 						}
-
-						if (hours >= 24) {
-							days = Math.round(hours / 24);
-							hours = hours % 24;
-						}
-
-						var time = ((days > 0) ? days + ' days' : (hours > 0) ? hours + ' hours' : minutes + ' minutes') + ' ago';
-
-						output += '<tr class="status_row ' + value.status + '">';
-						output += '<td>' + time + '<span class="tiny">' + updatedDate.toLocaleString() + '</span>' + '</td>';
-						output += '<td><a href="' + value.web_url + '">' + value.id + '</a></td>';
-						output += '<td>' + value.status + '</td>';
-						output += '<td>' + value.ref + '</td>';
-						if (showCommit) {
-							output += '<td id="' + value.id + '_commit"></td>';
-						}
-						if (showVariables) {
-							output += '<td id="' + value.id + '_variables"></td>';
-						}
-						if (showJobs) {
-							output += '<td id="' + value.id + '_jobs"></td>';
-						}
-						output += '</tr>';
 					}
 
 					output += '</table>';
-
 
 					document.getElementById('content-wrapper').innerHTML = output;
 
